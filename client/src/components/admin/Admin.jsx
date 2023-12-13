@@ -1,10 +1,10 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, {useContext, useState, useEffect} from "react";
 import {Link} from 'react-router-dom';
 
-import { Button, Snackbar } from "@mui/material";
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { Delete as DeleteIcon, Save as SaveIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
-import { useNavigate } from "react-router-dom";
+import {Button, Snackbar} from "@mui/material";
+import {DataGrid, GridColDef} from '@mui/x-data-grid';
+import {Delete as DeleteIcon, Save as SaveIcon, ArrowBack as ArrowBackIcon} from '@mui/icons-material';
+import {useNavigate} from "react-router-dom";
 
 import _ from 'lodash';
 
@@ -13,7 +13,7 @@ import AdminContext from "../../context/AdminProvider.js";
 import axios from "../../axios.js";
 
 const Admin = () => {
-    const { users, setUsers, roles, setRoles } = useContext(AdminContext);
+    const {users, setUsers, roles, setRoles} = useContext(AdminContext);
     const [snackbars, setSnackbars] = useState([]);
     const [isAuth, setIsAuth] = useState(true); // Assume the user is authenticated initially
     const [serverError, setServerError] = useState(false);
@@ -23,13 +23,14 @@ const Admin = () => {
         if (isAuth) {
             fetchUserData();
             fetchRoleData();
+            console.log("432")
         }
     }, [isAuth]);
 
     const fetchUserData = async () => {
         try {
             const response = await axios.get('/admin/users');
-            setUsers({ ...response?.data.users });
+            setUsers({...response?.data.users});
             addSnackbar('Users loaded successfully');
         } catch (error) {
             handleErrors(error);
@@ -50,10 +51,7 @@ const Admin = () => {
     const handleSave = async (user) => {
         try {
             const response = await axios.put(`/admin/users/${user.id}`, user);
-            const { oldUser, newUser } = response?.data;
-            const updatedUsers = { ...users, [oldUser.id]: newUser };
-            delete updatedUsers[oldUser.id];
-            setUsers(updatedUsers);
+            await fetchUserData();
             addSnackbar('User updated successfully');
         } catch (error) {
             handleErrors(error);
@@ -80,6 +78,8 @@ const Admin = () => {
             addSnackbar('You are not authorized to access this page', 'error');
         } else if (error.response?.status === 403) {
             addSnackbar('You don\'t have permissions', 'error');
+        } else if (error.response?.status === 409) {
+            addSnackbar('User with this username already exist.', 'error');
         } else {
             setServerError(true);
         }
@@ -87,7 +87,7 @@ const Admin = () => {
 
     const addSnackbar = (message, severity = 'success') => {
         const id = new Date().getTime() * Math.random();
-        const newSnackbar = { id, message, severity };
+        const newSnackbar = {id, message, severity};
 
         setSnackbars((prevSnackbars) => [...prevSnackbars, newSnackbar]);
 
@@ -101,7 +101,7 @@ const Admin = () => {
     };
 
     const renderSnackbars = () => (
-        <div style={{ position: 'fixed', bottom: 0, right: 0, zIndex: 1000, margin: '16px' }}>
+        <div style={{position: 'fixed', bottom: 0, right: 0, zIndex: 1000, margin: '16px'}}>
             {snackbars.map((snackbar) => (
                 <Snackbar
                     key={snackbar.id}
@@ -115,10 +115,10 @@ const Admin = () => {
     );
 
     const columns: GridColDef[] = [
-        { field: 'id', headerName: 'ID', flex: 1 },
-        { field: 'username', headerName: 'Username', flex: 1, editable: true },
-        { field: 'firstName', headerName: 'First name', flex: 1, editable: true },
-        { field: 'lastName', headerName: 'Last name', flex: 1, editable: true },
+        {field: 'id', headerName: 'ID', flex: 1},
+        {field: 'username', headerName: 'Username', flex: 1, editable: true},
+        {field: 'firstName', headerName: 'First name', flex: 1, editable: true},
+        {field: 'lastName', headerName: 'Last name', flex: 1, editable: true},
         {
             field: 'roles',
             headerName: 'Roles',
@@ -138,7 +138,7 @@ const Admin = () => {
             align: 'center',
             headerAlign: 'center',
             renderCell: (params) => (
-                <Button startIcon={<SaveIcon />} onClick={() => handleSave(params.row)}>Save</Button>
+                <Button startIcon={<SaveIcon/>} onClick={() => handleSave(params.row)}>Save</Button>
             )
         },
         {
@@ -149,7 +149,8 @@ const Admin = () => {
             align: 'center',
             headerAlign: 'center',
             renderCell: (params) => (
-                <Button startIcon={<DeleteIcon />} style={{ color: 'red' }} onClick={() => handleDelete(params.row.id)}>Delete</Button>
+                <Button startIcon={<DeleteIcon/>} style={{color: 'red'}}
+                        onClick={() => handleDelete(params.row.id)}>Delete</Button>
             )
         }
     ];
@@ -164,18 +165,25 @@ const Admin = () => {
 
     return (
         <>
-            {isAuth ? (
-                <div style={{ height: "100vh", width: '100%' }}>
+
+            {serverError ? (
+                <div className={"alert-container"}>
+                    <p>We're sorry, but we are currently experiencing issues with our server.<br></br>
+                        Please try again later or contact support for assistance.</p>
+                    <Link to='/me'>Back Home</Link>
+                </div>
+            ) : isAuth ? (
+                <div style={{height: "100vh", width: '100%'}}>
                     <Button
-                        style={{ margin: '16px' }}
+                        style={{margin: '16px'}}
                         variant="outlined"
-                        startIcon={<ArrowBackIcon />}
+                        startIcon={<ArrowBackIcon/>}
                         onClick={() => navigate(-1)}
                     >
                         Back
                     </Button>
                     <DataGrid
-                        style={{ paddingLeft: 10, paddingRight: 10 }}
+                        style={{paddingLeft: 10, paddingRight: 10}}
                         rows={rows}
                         columns={columns}
                         pageSize={20}
@@ -185,13 +193,6 @@ const Admin = () => {
             ) : (
                 <div className={"alert-container"}>
                     <p>You are not authorized to access this page.</p>
-                    <Link to='/me'>Back Home</Link>
-                </div>
-            )}
-            {serverError && (
-                <div className={"alert-container"}>
-                    <p>We're sorry, but we are currently experiencing issues with our server.<br></br>
-                        Please try again later or contact support for assistance.</p>
                     <Link to='/me'>Back Home</Link>
                 </div>
             )}

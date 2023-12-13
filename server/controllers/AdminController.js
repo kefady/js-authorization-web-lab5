@@ -31,6 +31,12 @@ class AdminController {
             const _id = req.params.id;
             const {firstName, lastName, username, roles} = req.body;
 
+            const user = await User.findOne({username});
+
+            if (user && user._id.toString() !== _id) {
+                return res.status(409).json({success: false, message: "Username already exist."});
+            }
+
             const oldUser = await User.findOneAndUpdate({_id}, {
                 firstName,
                 lastName,
